@@ -1,3 +1,59 @@
+求逆序对：
+
+```python
+c=0
+def f(t):
+    global c
+    if len(t)==1:
+        return t
+    if len(t)==2:
+        if t[0]>t[1]:
+            c+=1
+            return [t[1],t[0]]
+        else:
+            return t
+    x=len(t)//2
+    res=[]
+    a,b=f(t[:x+1]),f(t[x+1:])
+    if b[0]>=a[-1]:
+        return a+b
+    if a[0]>b[-1]:
+        c+=len(a)*len(b)
+        return b+a
+    if a[0]==b[-1]:
+        i=0
+        while i<len(a) and a[i]==a[0]:
+            i+=1
+        j=-1
+        while j>=-len(b) and b[j]==b[-1]:
+            j-=1
+        o=i*(len(b)+j+1)+(len(a)-i)*len(b)
+        c+=o
+        return b+a
+    i,j=0,0
+    while i<x+1 and j<len(t)-x-1:
+        if a[i]>b[j]:
+            res.append(b[j])
+            j+=1
+        else:
+            c+=j
+            res.append(a[i])
+            i+=1
+    if i==x+1:
+        res.extend(b[j:])
+    else:
+        c+=(x+1-i)*len(b)
+        res.extend(a[i:])
+    return res
+n=int(input())
+l=[int(input()) for _ in range(n)]
+l=list(reversed(l))
+f(l)
+print(c)
+```
+
+
+
 ## 栈（2个经典题）
 
 ```python
@@ -23,10 +79,7 @@ while 1:
                     i+=1
             except:
                 break
-        if a:
-            print('NO')
-        else:
-            print('YES')
+        if a: print('NO') else: print('YES')
     except EOFError:
         break
 ```
@@ -40,9 +93,9 @@ print(int(comb(2*n, n)/(n+1)))
 
 #### 单调栈（每日温度）：单调递减栈求的是一个元素右侧第一个比它大的和左侧第一个比它大的，单调递增栈求的是一个元素右侧第一个比它小的和左侧第一个比它小的（都是从左往右遍历）
 
-<img src="C:\Users\huawei\AppData\Roaming\Typora\typora-user-images\image-20240319233456988.png" alt="image-20240319233456988" style="zoom:80%;" />
+<img src="C:\Users\huawei\AppData\Roaming\Typora\typora-user-images\image-20240319233456988.png" alt="image-20240319233456988" style="zoom: 50%;" />
 
-![image-20240502152103120](C:\Users\huawei\AppData\Roaming\Typora\typora-user-images\image-20240502152103120.png)
+<img src="C:\Users\huawei\AppData\Roaming\Typora\typora-user-images\image-20240502152103120.png" alt="image-20240502152103120" style="zoom:50%;" />
 
 ```c++
 #include <iostream>
@@ -107,6 +160,44 @@ print(ans)
 ```
 
 #### 调度场算法： 
+
+```python
+#中序转后序
+d={'+':1,'-':1,'*':2,'/':2}
+for _ in range(int(input())):
+    s=input()
+    l=[]
+    j=0
+    for i in range(len(s)):
+        if s[i] in '+-*/()':
+            l.append((s[j:i]))
+            l.append(s[i])
+            j=i+1
+    l.append((s[j:]))
+    ans=[]
+    op=[]
+    for u in l:
+        if u=='' or u==' ':
+            continue
+        if u not in '+-*/()':
+            ans.append(u)
+        elif u=='(':
+            op.append(u)
+        elif u ==')':
+            while op:
+                x=op.pop()
+                if x=='(':
+                    break
+                ans.append(x)
+        else:
+            while op and op[-1]!='(' and d[u]<=d[op[-1]]:
+                x=op.pop()
+                ans.append(x)
+            op.append(u)
+    while op:
+        ans.append(op.pop())
+    print(*ans)
+```
 
 ```python
 #布尔表达式
@@ -198,9 +289,214 @@ for _ in range(int(input())):
                 t=2*t+1
 ```
 
+2.一个堆题 洛谷P6044
+
+<img src="C:\Users\huawei\AppData\Roaming\Typora\typora-user-images\image-20240530234141905.png" alt="image-20240530234141905" style="zoom:67%;" />
+
+## 并查集：
+
+#### 1.反集：（用于：
+
+- 一个人的朋友的朋友是朋友
+
+- 一个人的敌人的敌人是朋友
+
+  ）
+
+```c++
+	#include<iostream>
+	using namespace std;
+	int a[2010];
+	int n, m;
+	int findd(int x) { // 查找模板
+		return x == a[x] ? x : a[x]=findd(a[x]);
+	}
+	void merge(int x, int y) { // 并查集模板
+		x = findd(x), y = findd(y);
+		if(x != y) a[x] = y;
+	}
+	int main() {
+		cin >> n >> m;
+		for(int i = 1; i <= 2*n; ++i) // 2倍数据
+			a[i] = i;
+		int x, y;
+		char c;
+		for(int i = 0; i != m; ++i) {
+			cin >> c >> x >> y;
+			if(c == 'F') {
+				merge(x, y); // 普通合并
+			} else {
+				// 不能直接合并
+				merge(x+n, y); // 先用反集分别保存一下
+				merge(y+n, x);
+				//如果a和b是敌人，合并n+b和a，n+a和b
+				//如果c和a是敌人，合并n+c和a，n+a和c
+				//那么b和c就并在一起了
+				
+				// 注意这里的合并祖先是 在 1~n
+				// 如果写成merge(x, y+n) 祖先就在n~2*n里面了
+				// 因为merge里面 a[x] = y
+			}
+		}
+		int ans = 0;
+		for(int i = 1; i <= n; ++i)
+			if(a[i] == i) ans++;
+		cout << ans << endl;
+		return 0;
+	}
+```
+
+#### 2.带权并查集（注意更新方式，尤其是下面第4,5行不能交换）
+
+```python
+def f(x):
+    y=0
+    while x!=dic[x][0]:
+        y=(y+dic[x][1])%2
+        x=dic[x][0]
+        dic[x]=[dic[dic[x][0]][0],(dic[x][1]+dic[dic[x][0]][1])%2]
+    return x,y
+n=int(input())
+dic={i:[i,0] for i in range(1,n+1)}
+h=1
+for i in range(1,n+1):
+    a,b=map(int,input().split())
+    a1,a2=f(a)
+    i1,i2=f(i)
+    if a1==i1 and ((b==1 and a2!=i2) or (b==0 and a2==i2)):
+        h=0
+    if (b==0 and a2!=i2) or (b==1 and a2==i2):
+        dic[a1]=[i1,0]
+    else:
+        dic[a1]=[i1,1]
+res={}
+for i in range(1,n+1):
+    a,b=f(i)
+    if a not in res:
+        res[a]=[0,0]
+        res[a][b]+=1
+    else:
+        res[a][b]+=1
+if h==0:
+    print('No answer')
+    exit()
+print(2**len(res))
+a,b=0,0
+for u in res:
+    a+=max(res[u])
+    b+=min(res[u])
+print(a)
+print(b)
+
+```
+
+#### 3.并查集求最小环
+
+<img src="C:\Users\huawei\AppData\Roaming\Typora\typora-user-images\image-20240603141014766.png" alt="image-20240603141014766" style="zoom:50%;" />
+
+把每个同学看成一个点，信息的传递就是在他们之间连有向边，游戏轮数就是求最小环。
+
+图论求最小环，我在里面看到了并查集。
+
+假如说信息由A传递给B，那么就连一条由A指向B的边，同时更新A的父节点，A到它的父节点的路径长也就是B到它的父节点的路径长+1。
+
+这样我们就建立好了一个图，之后信息传递的所有环节都按照这些路径。游戏结束的轮数，也就是这个图里最小环的长度。
+
+如果有两个点祖先节点相同，那么就可以构成一个环，长度为两个点到祖先节点长度之和+1
+
+```c++
+#include<cstdio>
+#include<iostream>
+using namespace std;
+int f[200002],d[200002],n,minn,last;   //f保存祖先节点，d保存到其祖先节点的路径长。 
+int fa(int x)
+{
+    if (f[x]!=x)                       //查找时沿途更新祖先节点和路径长。 
+    {
+        int last=f[x];                 //记录父节点（会在递归中被更新）。 
+        f[x]=fa(f[x]);                 //更新祖先节点。 
+        d[x]+=d[last];                 //更新路径长（原来连在父节点上）。 
+    }
+    return f[x];
+}
+void check(int a,int b)
+{
+    int x=fa(a),y=fa(b);               //查找祖先节点。 
+    if (x!=y) {f[x]=y; d[a]=d[b]+1;}   //若不相连，则连接两点，更新父节点和路径长。 
+    else minn=min(minn,d[a]+d[b]+1);   //若已连接，则更新最小环长度。 
+    return;
+}
+int main()
+{
+    int i,t;
+    scanf("%d",&n);
+    for (i=1;i<=n;i++) f[i]=i;         //祖先节点初始化为自己，路径长为0。 
+    minn=0x7777777;
+    for (i=1;i<=n;i++)
+    {
+        scanf("%d",&t);
+        check(i,t);                    //检查当前两点是否已有边相连接。 
+    }
+    printf("%d",minn);
+    return 0;
+}
+```
+
 
 
 ## 树
+
+建树：注意节点名字可能会重复
+
+```python
+#扩展二叉树（完全二叉树的先序遍历）
+from collections import defaultdict
+i=1
+def f(a):
+    global i
+    child[a].append(s[i])
+    if s[i]=='.':
+        i+=1
+        return
+    t=s[i]
+    i+=1
+    f(t)
+    f(t)
+def pre(a):
+def post(a):
+s=input()
+child=defaultdict(list)
+f(s[0])
+f(s[0])
+print(pre(s[0]))
+print(post(s[0]))
+```
+
+```python
+#文本二叉树（用栈解决，到叶子节点回溯到上一个可插入的节点）
+from collections import defaultdict
+dic=defaultdict(list)
+l=[]
+root=''
+for _ in range(int(input())):
+    while 1:
+        s=input()
+        if s=='0':
+           break
+        if not root:
+            root=s[-1]
+        if not l:
+            l.append([s[-1],len(s)])
+        else:
+            if len(s)==l[-1][1]+1:
+                dic[l[-1][0]].append(s[-1])
+                l.append([s[-1],len(s)])
+            else:
+                while len(s)!=l[-1][1]+1:
+                    l.pop()
+                dic[l[-1][0]].append(s[-1])
+                l.append([s[-1],len(s)])
+```
 
 ### 1.树状数组
 
@@ -225,7 +521,6 @@ class FenwickTree:
 
     def range_query(self, start, end):
         return self.query(end) - self.query(start - 1)
-
 ```
 
 ### 2.关于3种遍历
@@ -234,7 +529,7 @@ class FenwickTree:
 
 先序和后序不能唯一确定树的形状（找只有一个子树的节点数量即可）
 
-![image-20240527201023072](C:\Users\huawei\AppData\Roaming\Typora\typora-user-images\image-20240527201023072.png)
+<img src="C:\Users\huawei\AppData\Roaming\Typora\typora-user-images\image-20240527201023072.png" alt="image-20240527201023072" style="zoom:50%;" />
 
 ```python
 #薛定谔的二叉树
@@ -273,7 +568,6 @@ def f(a,b):
             break
     if not u:
         return -1
-    #print(t)
     x=f(a[i:t+1],b[:t+1-i])
     y=f(a[t+1:],b[t+1-i:-1])
     if x==-1 or y==-1: return -1
@@ -429,54 +723,7 @@ for _ in range(int(input())):
             o.append(u)
     k=f(o)
     print(dfs(k))
-2.栈写法
-dic={'+':1,'-':1,'*':2,'/':2}
-f=set(['+','-','*','/','(',')'])
-for _ in range(int(input())):
-    s=input()
-    l=[]
-    i=0
-    for j in range(len(s)):
-        u=s[j]
-        if u in f:
-            if s[i:j]:
-                l.append(s[i:j])
-            l.append(u)
-            i=j+1
-    if i<=len(s):
-        if s[i:]:
-                l.append(s[i:])
-    res=[]
-    stack=[]
-    for u in l:
-        if u not in f:
-            res.append(u)
-        else:
-            if not stack:
-                stack.append(u)
-            elif u=='(':
-                stack.append(u)
-            elif u==')':
-                while 1:
-                    x=stack[-1]
-                    stack.pop()
-                    if x=='(':
-                        break
-                    res.append(x)
-                    
-            elif stack[-1]!='(' and dic[u]<=dic[stack[-1]]:
-                
-                while stack and stack[-1]!='(' and dic[stack[-1]]>=dic[u]:
-                    res.append(stack[-1])
-                    stack.pop()
-                stack.append(u)
-            else:
-                stack.append(u)
-                    
-    while stack:
-        res.append(stack[-1])
-        stack.pop()
-    print(' '.join(res))
+2.调度场算法在前面
 ```
 
 ```python
@@ -568,7 +815,159 @@ print(g(s[0]))
 print(h(s[0]))
 ```
 
+<img src="C:\Users\huawei\AppData\Roaming\Typora\typora-user-images\image-20240604123730082.png" alt="image-20240604123730082" style="zoom:50%;" />
 
+```python
+'''
+表达式树是一种特殊的二叉树。对于你的问题，需要先将中缀表达式转换为后缀表达式
+（逆波兰式），然后根据后缀表达式建立表达式树，最后进行计算。
+
+首先使用stack进行中缀到后缀的转换，然后根据后缀表达式建立表达式二叉树，
+再通过递归和映射获取表达式的值。
+最后，打印出整棵树
+'''
+#from collections import deque as q
+import operator as op
+#import os
+
+class Node:
+    def __init__(self, x):
+        self.value = x
+        self.left = None
+        self.right = None
+
+
+def priority(x):
+    if x == '*' or x == '/':
+        return 2
+    if x == '+' or x == '-':
+        return 1
+    return 0
+
+
+def infix_trans(infix):
+    postfix = []
+    op_stack = []
+    for char in infix:
+        if char.isalpha():
+            postfix.append(char)
+        else:
+            if char == '(':
+                op_stack.append(char)
+            elif char == ')':
+                while op_stack and op_stack[-1] != '(':
+                    postfix.append(op_stack.pop())
+                op_stack.pop()
+            else:
+                while op_stack and priority(op_stack[-1]) >= priority(char) and op_stack[-1] != '(':
+                    postfix.append(op_stack.pop())
+                op_stack.append(char)
+    while op_stack:
+        postfix.append(op_stack.pop())
+    return postfix
+
+
+def build_tree(postfix):
+    stack = []
+    for item in postfix:
+        if item in '+-*/':
+            node = Node(item)
+            node.right = stack.pop()
+            node.left = stack.pop()
+        else:
+            node = Node(item)
+        stack.append(node)
+    return stack[0]
+
+
+def get_val(expr_tree, var_vals):
+    if expr_tree.value in '+-*/':
+        operator = {'+': op.add, '-': op.sub, '*': op.mul, '/': op.floordiv}
+        return operator[expr_tree.value](get_val(expr_tree.left, var_vals), get_val(expr_tree.right, var_vals))
+    else:
+        return var_vals[expr_tree.value]
+
+# 计算表达式树的深度。它通过递归地计算左右子树的深度，并取两者中的最大值再加1，得到整个表达式树的深度。
+
+def getDepth(tree_root):
+    #return max([self.child[i].getDepth() if self.child[i] else 0 for i in range(2)]) + 1
+    left_depth = getDepth(tree_root.left) if tree_root.left else 0
+    right_depth = getDepth(tree_root.right) if tree_root.right else 0
+    return max(left_depth, right_depth) + 1
+
+    '''
+    首先，根据表达式树的值和深度信息构建第一行，然后构建第二行，该行包含斜线和反斜线，
+    用于表示子树的链接关系。接下来，如果当前深度为0，表示已经遍历到叶子节点，直接返回该节点的值。
+    否则，递减深度并分别获取左子树和右子树的打印结果。最后，将左子树和右子树的每一行拼接在一起，
+    形成完整的树形打印图。
+    
+打印表达式树的函数。表达式树是一种抽象数据结构，它通过树的形式来表示数学表达式。在这段程序中，
+函数printExpressionTree接受两个参数：tree_root表示树的根节点，d表示树的总深度。
+首先，函数会创建一个列表graph，列表中的每个元素代表树的一行。第一行包含根节点的值，
+并使用空格填充左右两边以保持树的形状。第二行显示左右子树的链接情况，使用斜杠/表示有左子树，
+反斜杠\表示有右子树，空格表示没有子树。
+
+接下来，函数会判断深度d是否为0，若为0则表示已经达到树的最底层，直接返回根节点的值。否则，
+将深度减1，然后递归调用printExpressionTree函数打印左子树和右子树，
+并将结果分别存储在left和right中。
+
+最后，函数通过循环遍历2倍深度加1次，将左子树和右子树的每一行连接起来，存储在graph中。
+最后返回graph，即可得到打印好的表达式树。
+    '''
+
+def printExpressionTree(tree_root, d):  # d means total depth
+
+    graph = [" "*(2**d-1) + tree_root.value + " "*(2**d-1)]
+    graph.append(" "*(2**d-2) + ("/" if tree_root.left else " ")
+                 + " " + ("\\" if tree_root.right else " ") + " "*(2**d-2))
+
+    if d == 0:
+        return tree_root.value
+    d -= 1
+    '''
+    应该是因为深度每增加一层，打印宽度就增加一倍，打印行数增加两行
+    '''
+    #left = printExpressionTree(tree_root.left, d) if tree_root.left else [
+    #    " "*(2**(d+1)-1)]*(2*d+1)
+    if tree_root.left:
+        left = printExpressionTree(tree_root.left, d)
+    else:
+        #print("left_d",d)
+        left = [" "*(2**(d+1)-1)]*(2*d+1)
+        #print("left_left",left)
+
+    right = printExpressionTree(tree_root.right, d) if tree_root.right else [
+        " "*(2**(d+1)-1)]*(2*d+1)
+
+    for i in range(2*d+1):
+        graph.append(left[i] + " " + right[i])
+        #print('graph=',graph)
+    return graph
+
+infix = input().strip()
+n = int(input())
+vars_vals = {}
+for i in range(n):
+    line = input().split()
+    vars_vals[line[0]] = int(line[1])
+    
+'''
+infix = "a+(b-c*d*e)"
+#infix = "a+b*c"
+n = 5
+vars_vals = {'a': 2, 'b': 7, 'c': 5, 'd':1, 'e':1}
+'''
+
+postfix = infix_trans(infix)
+tree_root = build_tree(postfix)
+print(''.join(str(x) for x in postfix))
+expression_value = get_val(tree_root, vars_vals)
+
+for line in printExpressionTree(tree_root, getDepth(tree_root)-1):
+    print(line.rstrip())
+
+print(expression_value)
+```
 
 ```python
 #25140:根据后序表达式建立表达式树
@@ -767,9 +1166,7 @@ class Node:                                     # 字符节点
         self.children = dict()                  # 初始化子节点
         self.isEnd = False                      # isEnd 用于标记单词结束
         
-        
 class Trie:                                     # 字典树
-    
     # 初始化字典树
     def __init__(self):                         # 初始化字典树
         self.root = Node()                      # 初始化根节点（根节点不保存字符）
@@ -832,16 +1229,13 @@ class AVL:
             node.right = self._insert(value, node.right)
 
         node.height = 1 + max(self._get_height(node.left), self._get_height(node.right))
-
         balance = self._get_balance(node)
-
         if balance > 1:
             if value < node.left.value:	# 树形是 LL
                 return self._rotate_right(node)
             else:	# 树形是 LR
                 node.left = self._rotate_left(node.left)
                 return self._rotate_right(node)
-
         if balance < -1:
             if value > node.right.value:	# 树形是 RR
                 return self._rotate_left(node)
@@ -897,229 +1291,155 @@ for value in sequence:
 print(' '.join(map(str, avl.preorder())))
 ```
 
-#### 7.求LCA：贴个链接，应该不考 ：求 LCA 的三种方法 - lsdsjy - 博客园
-https://www.cnblogs.com/lsdsjy/p/4071041.html
+#### 7.哈夫曼编码树
+
+<img src="C:\Users\huawei\AppData\Roaming\Typora\typora-user-images\image-20240604211410942.png" alt="image-20240604211410942" style="zoom:50%;" />
+
+```python
+import heapq
+class Node:
+    def __init__(self, weight, char=None):
+        self.weight = weight
+        self.char = char
+        self.left = None
+        self.right = None
+
+    def __lt__(self, other):
+        if self.weight == other.weight:
+            return self.char < other.char
+        return self.weight < other.weight
+
+def build_huffman_tree(characters):
+    heap = []
+    for char, weight in characters.items():
+        heapq.heappush(heap, Node(weight, char))
+
+    while len(heap) > 1:
+        left = heapq.heappop(heap)
+        right = heapq.heappop(heap)
+        #merged = Node(left.weight + right.weight) #note: 合并后，char 字段默认值是空
+        merged = Node(left.weight + right.weight, min(left.char, right.char))
+        merged.left = left
+        merged.right = right
+        heapq.heappush(heap, merged)
+
+    return heap[0]
+
+def encode_huffman_tree(root):
+    codes = {}
+
+    def traverse(node, code):
+        #if node.char:
+        if node.left is None and node.right is None:
+            codes[node.char] = code
+        else:
+            traverse(node.left, code + '0')
+            traverse(node.right, code + '1')
+
+    traverse(root, '')
+    return codes
+
+def huffman_encoding(codes, string):
+    encoded = ''
+    for char in string:
+        encoded += codes[char]
+    return encoded
+
+def huffman_decoding(root, encoded_string):
+    decoded = ''
+    node = root
+    for bit in encoded_string:
+        if bit == '0':
+            node = node.left
+        else:
+            node = node.right
+
+        #if node.char:
+        if node.left is None and node.right is None:
+            decoded += node.char
+            node = root
+    return decoded
+
+# 读取输入
+n = int(input())
+characters = {}
+for _ in range(n):
+    char, weight = input().split()
+    characters[char] = int(weight)
+
+#string = input().strip()
+#encoded_string = input().strip()
+
+# 构建哈夫曼编码树
+huffman_tree = build_huffman_tree(characters)
+
+# 编码和解码
+codes = encode_huffman_tree(huffman_tree)
+
+strings = []
+while True:
+    try:
+        line = input()
+        strings.append(line)
+
+    except EOFError:
+        break
+
+results = []
+#print(strings)
+for string in strings:
+    if string[0] in ('0','1'):
+        results.append(huffman_decoding(huffman_tree, string))
+    else:
+        results.append(huffman_encoding(codes, string))
+
+for result in results:
+    print(result)
+```
 
 ## 图
+
+**建图非常关键：1.单双向边  2.注意连接2点的道路如果超过1条，如何存储的问题，可以用字典或邻接矩阵存最小值，但是像road这样的题可能会时间更长但路费少，所以必须全部存下**
 
 #### 1.dijkstra
 
 ```python
-#05443 兔子与樱花
-from collections import defaultdict
+#roads（1：没有vis 2：控制条件的k可能会陷入存一维的思维陷阱，但是这里只是加了判断，实际速度反而快了）
+from collections import deque
 import heapq
-dic=defaultdict(list)
-p=int(input())
-l=[input() for _ in range(p)]
-q=int(input())
-for _ in range(q):
-    a,b,c=input().split()
-    c=int(c)
-    dic[a].append((c,a,b))
-    dic[b].append((c,b,a))
-for _ in range(int(input())):
-    s,e=input().split()
-    if s==e:
-        print(s)
-        continue
-    u=dic[s]
-    heapq.heapify(u)
-    vis=set([s])
-    par={}
-    while 1:
-        while 1:
-            x,y,z=heapq.heappop(u)
-            if z not in vis:
-                break
-        vis.add(z)
-        par[z]=(y,x)
-        if z==e:
-            al=[]
-            break
-        for k in dic[z]:
-            n,m,h=k
-            heapq.heappush(u,(n+x,z,h))
-    cur=e
-    while 1:
-        a,b=par[cur]
-        al.append((cur,b))
-        if a==s:
-            break
-        cur=a
-    al.reverse()
-    al=[(s,0)]+al
-    ans=s
-    for i in range(1,len(al)):
-        a,b=al[i-1]
-        x,y=al[i]
-        ans+='->('+str(y-b)+')->'+x
-    print(ans)
-```
-
-
-
-#### 2.最小生成树
-
-```python
-#05442 兔子与星空
-import heapq
-from collections import defaultdict
+k=int(input())
 n=int(input())
-dc=defaultdict(list)
-for _ in range(n-1):
-    s=list(input().split())
-    a=s[0]
-    b=int(s[1])
-    t=[]
-    for i in range(b):
-        c,d=s[2+2*i],s[3+2*i]
-        d=int(d)
-        dc[a].append((d,a,c))
-        dc[c].append((d,c,a))
-p=set(['A'])
-f=dc['A']
-ans=0
-c=1
-heapq.heapify(f)
-while c<n:
-    while 1:
-        a=heapq.heappop(f)
-        if not (a[1] in p and a[2] in p):
-            if a[1] in p:
-                r=a[2]
-            else:
-                r=a[1]
-            p.add(r)
-            ans+=a[0]
-            c+=1
-            for u in dc[r]:
-                heapq.heappush(f, u)
-            break
+r=int(input())
+p=[[list() for __ in range(102)] for _ in range(102)]
+for _ in range(r):
+    s,d,a,b=map(int,input().split())
+    p[s][d].append((a,b))
+t=[]
+for i in range(2,n+1):
+    for u in p[1][i]:
+        heapq.heappush(t, (u[0],u[1],i))
+
+ans=-1
+while t:
+    a,b,c=heapq.heappop(t)
+    #print(a,b,c)
+    if b>k:
+        continue
+    if c==n:
+        print(a)
+        exit()
+    for i in range(1,n+1):
+        for u in p[c][i]:
+            heapq.heappush(t, (a+u[0],b+u[1],i))
 print(ans)
 ```
 
-#### 3.如走山路，鸣人等，都是多加一维的dp题。一般的bfs储存走过的vis其实是知道第一次到达某个点一定是最小值了，其他时候往往加入其他维度来控制，或者用dp存储已知最小步数
+#### 2.最小生成树
 
-```python
-#20106 走山路
-import heapq
-m,n,p=map(int,input().split())
-mp=[list(input().split()) for _ in range(m)]
-for _ in range(p):
-    a,b,c,d=map(int,input().split())
-    l=[(0,a,b)]
-    dp=[[1e9]*n for __ in range(m)]
-    heapq.heapify(l)
-    ans='NO'
-    if mp[a][b]=='#' or mp[c][d]=='#':
-        print(ans)
-        continue
-    while l:
-        num,x,y=heapq.heappop(l)
-        if x==c and y==d:
-            ans=num
-            break
-        for u in [(x-1,y),(x+1,y),(x,y-1),(x,y+1)]:
-            xx,yy=u
-            if 0<=xx<m and 0<=yy<n and mp[xx][yy]!='#':
-                t=abs(int(mp[xx][yy])-int(mp[x][y]))
-                if num+t<dp[xx][yy]:
-                    dp[xx][yy]=num+t
-                    heapq.heappush(l, (num+t,xx,yy))
-    print(ans)
-    
-```
+prim算法：需要defaultdict建边，需要vis记录已访问，需要heapq把每次可扩展的边加入
 
-```python
-#01376:Robot
-from collections import deque
-dic={'north':0,'west':1,'south':2,'east':-1}
-dr={0:(-1,0),1:(0,-1),2:(1,0),-1:(0,1)}
-while 1:
-    m,n=map(int,input().split())
-    if m==0:
-        break
-    l=[]
-    for _ in range(m):
-        t=list(map(int,input().split()))
-        l.append(t)
-    a,b,c,d,e=input().split()
-    a,b,c,d=int(a),int(b),int(c),int(d)
-    fl=[[[1e9]*n for _ in range(m)] for __ in range(4)]
-    fl[dic[e]][a][b]=0
-    q=deque([(a,b,dic[e],0)])
-    ans=1e9
-    while q:
-        a,b,e,f=q.popleft()
-        if a==c and b==d:
-            ans=min(ans,f)
-        for u in range(1,4):
-            aa,bb=a+u*dr[e][0],b+u*dr[e][1]
-            if 1<=aa<m and 1<=bb<n and l[aa][bb]==l[aa][bb-1]==l[aa-1][bb]==l[aa-1][bb-1]==0:
-                if fl[e][aa][bb]>f+1:
-                    fl[e][aa][bb]=f+1
-                    q.append((aa,bb,e,f+1))
-            else:
-                    break
-        for u in range(-1,3):
-            if u==e:
-                continue
-            if fl[u][a][b]>f+min(4-abs(u-e),abs(u-e)):
-                fl[u][a][b]=f+min(4-abs(u-e),abs(u-e))
-                q.append((a,b,u,f+min(4-abs(u-e),abs(u-e))))
-    if ans==1e9:
-        print(-1)
-    else:
-        print(ans)
-```
-
-```python
-#04115:鸣人和佐助
-def f():
-    global x,mr,zz
-    while not x.empty():
-        s=x.get()
-        ne=[]
-        for step in nextstep:
-            r=[s[0]+step[0],s[1]+step[1]]
-            if (r[0],r[1],s[2]-[0,1][k[r[0]][r[1]]=='#']) in flag:
-                continue
-            if k[r[0]][r[1]]==-1:
-                continue
-            elif k[r[0]][r[1]]=='+':
-                return s[3]+1
-            elif k[r[0]][r[1]]=='#':
-                if s[2]>0:
-                    x.put((r[0],r[1],s[2]-1,s[3]+1))
-                    flag.add((r[0],r[1],s[2]-1))
-            else:
-                x.put((r[0],r[1],s[2],s[3]+1))
-                flag.add((r[0],r[1],s[2]))
-    return -1
-import queue
-m,n,t=map(int,input().split())
-k=[[-1]*(n+2)]
-mr=-1
-flag=set()
-nextstep=[[-1,0],[1,0],[0,-1],[0,1]]
-for _ in range(m):
-    kk=[-1]+list(input())+[-1]
-    k.append(kk)
-    if mr==-1:
-        try:
-           mr=kk.index('@')
-           mr=(_+1,mr,t,0)
-           
-        except:
-            continue
-k.append([-1]*(n+2))
-x=queue.Queue()
-x.put(mr)
-flag.add(mr[:3])
-print(f())
-```
-
-##### 4.最小生成树
+kruskal算法：需要字典用来并查集，先开始记录了边不需要邻接矩阵，需要heapq（或排序好的边
+)，不需要vis但需要记录已经加了多少条边（和最短路区别是第一个元素是边的权重，而最短路是到那个点的距离）
 
 ```python
 
@@ -1191,7 +1511,165 @@ def kruskal(graph):
     return minimum_spanning_tree
 ```
 
-##### 5.拓扑排序
+
+
+#### 3.如走山路，鸣人等，都是多加一维的dp题。一般的bfs储存走过的vis其实是知道第一次到达某个点一定是最小值了，其他时候往往加入其他维度来控制，或者用dp存储已知最小步数
+
+```python
+#20106 走山路
+import heapq
+m,n,p=map(int,input().split())
+mp=[list(input().split()) for _ in range(m)]
+for _ in range(p):
+    a,b,c,d=map(int,input().split())
+    l=[(0,a,b)]
+    dp=[[1e9]*n for __ in range(m)]
+    heapq.heapify(l)
+    ans='NO'
+    if mp[a][b]=='#' or mp[c][d]=='#':
+        print(ans)
+        continue
+    while l:
+        num,x,y=heapq.heappop(l)
+        if x==c and y==d:
+            ans=num
+            break
+        for u in [(x-1,y),(x+1,y),(x,y-1),(x,y+1)]:
+            xx,yy=u
+            if 0<=xx<m and 0<=yy<n and mp[xx][yy]!='#':
+                t=abs(int(mp[xx][yy])-int(mp[x][y]))
+                if num+t<dp[xx][yy]:
+                    dp[xx][yy]=num+t
+                    heapq.heappush(l, (num+t,xx,yy))
+    print(ans)
+```
+
+```python
+#01376:Robot
+from collections import deque
+dic={'north':0,'west':1,'south':2,'east':-1}
+dr={0:(-1,0),1:(0,-1),2:(1,0),-1:(0,1)}
+while 1:
+    m,n=map(int,input().split())
+    if m==0:
+        break
+    l=[]
+    for _ in range(m):
+        t=list(map(int,input().split()))
+        l.append(t)
+    a,b,c,d,e=input().split()
+    a,b,c,d=int(a),int(b),int(c),int(d)
+    fl=[[[1e9]*n for _ in range(m)] for __ in range(4)]
+    fl[dic[e]][a][b]=0
+    q=deque([(a,b,dic[e],0)])
+    ans=1e9
+    while q:
+        a,b,e,f=q.popleft()
+        if a==c and b==d:
+            ans=min(ans,f)
+        for u in range(1,4):
+            aa,bb=a+u*dr[e][0],b+u*dr[e][1]
+            if 1<=aa<m and 1<=bb<n and l[aa][bb]==l[aa][bb-1]==l[aa-1][bb]==l[aa-1][bb-1]==0:
+                if fl[e][aa][bb]>f+1:
+                    fl[e][aa][bb]=f+1
+                    q.append((aa,bb,e,f+1))
+            else:
+                    break
+        for u in range(-1,3):
+            if u==e:
+                continue
+            if fl[u][a][b]>f+min(4-abs(u-e),abs(u-e)):
+                fl[u][a][b]=f+min(4-abs(u-e),abs(u-e))
+                q.append((a,b,u,f+min(4-abs(u-e),abs(u-e))))
+    if ans==1e9:
+        print(-1)
+    else:
+        print(ans)
+```
+
+```c++
+//Saving Tang Monk
+#include<iostream>
+#include<queue>
+#include<cstring>
+#include<map>
+using namespace std;
+char maze[105][105];
+int n,m;
+struct node{
+	int step,x,y,num,s;
+	bool operator>(const node& other) const{
+		return step>other.step;
+	}
+};
+map<pair<int,int>,int > snake;
+bool record[105][105][10];
+int dirx[]={0,0,1,-1};
+int diry[]={1,-1,0,0};
+int main(){
+	while(cin>>n>>m){
+		if(n==0&&m==0) break;
+		priority_queue<node,vector<node>,greater<node> > queue;
+		memset(record,0,sizeof(record));
+		node start={0,0,0,0,0};
+		int cnt=0;
+		for(int i=0;i<n;i++){
+			for(int j=0;j<n;j++){
+				cin>>maze[i][j];
+				if(maze[i][j]=='K'){
+					start={0,i,j,0,0};
+					queue.push(start);
+					record[i][j][0]=1;
+				}
+				else if(maze[i][j]=='S'){
+					snake[make_pair(i,j)]=cnt++;
+				}
+			}
+		}
+		bool flag=false;
+		while(!queue.empty()){
+			node t=queue.top();
+			queue.pop();
+			int x=t.x;int y=t.y;int step=t.step;int num=t.num;int s=t.s;
+			if(maze[x][y]=='T'&&num==m){
+				cout<<step<<endl;
+				flag=true;
+				break;
+			}
+			for(int i=0;i<4;i++){
+				int nx=x+dirx[i];int ny=y+diry[i];
+				if(0<=nx&&nx<n&&0<=ny&&ny<n&&maze[nx][ny]!='#'){
+					int tmp;
+					if(maze[nx][ny]-'0'-num==1) tmp=maze[nx][ny]-'0';
+					else tmp=num;
+					if(record[nx][ny][tmp]==0){
+						if(maze[nx][ny]=='S'){
+							if((s>>snake[make_pair(nx,ny)]&1)==0){
+								queue.push({step+2,nx,ny,tmp,s|(1<<(snake[make_pair(nx,ny)]))});
+								record[nx][ny][tmp]=1;
+							}
+							else{
+								queue.push({step+1,nx,ny,tmp,s});
+								record[nx][ny][tmp]=1;
+							}
+						}
+						else{
+							queue.push({step+1,nx,ny,tmp,s});
+							record[nx][ny][tmp]=1;
+						}
+					}
+				}
+			}
+		}
+		if(!flag) cout<<"impossible"<<endl;
+	}
+	return 0; 
+}
+```
+
+
+
+5.拓扑排序：给出的是这些事件的逻辑顺序，所以在dp里为保证后效性，先用拓扑排序然后以此为顺序dp常见（还有关键路径算法也是以此为基础）
 
 ```python
 from collections import deque, defaultdict
@@ -1244,44 +1722,81 @@ else:
     print("The graph contains a cycle.")
 ```
 
+```python
+#sorting it all out（判定是否可确定序列，看每次入度为0的节点是否为1）
+import heapq
+from collections import defaultdict
+while 1:
+    n,m=map(int,input().split())
+    if n==0 and m==0:
+        break
+    dic={}
+    already=1
+    for u in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[:n]:
+        dic[u]=0
+    t=defaultdict(list)#记录小于的字母
+    cycle=0
+    sure=0
+    al=set()
+    for _ in range(m):
+        s=input()
+        if s in al:
+            continue
+        f=1#检验是否determined
+        al.add(s)
+        a,b=s[0],s[2]
+        t[a].append(b)
+        dic[b]+=1
+        l=[]
+        p=dic.copy()
+        vis=set()
+        res=[]
+        c=0
+        for u in p:
+            if p[u]==0:
+                heapq.heappush(l, u)
+                vis.add(u)
+                res.append(u)
+                c+=1
+        if c>1:
+            f=0
+        while l and len(vis)<n:
+            a=heapq.heappop(l)
+            vis.add(a)
+            c=0
+            for u in t[a]:
+                p[u]-=1
+                if u not in vis and p[u]==0:
+                    heapq.heappush(l, u)
+                    res.append(u)
+                    vis.add(u)
+                    c+=1
+            if c>1:
+                    f=0
+        if already and len(vis)<n:
+            cycle=_+1
+            print('Inconsistency found after %d relations.'%cycle)
+            already=0
+        if already and f and cycle==0 and sure==0:
+            sure=_+1
+            print('Sorted sequence determined after %d relations: %s.'%(sure,''.join(res)))
+            already=0
+    if already:
+        print('Sorted sequence cannot be determined.')
+```
+
 
 
 ## 附录（其他算法内容）
 
-##### 1.题目简单，但是 两位数 的情形很容易就忽视了
-
-```python
-#23563:多项式时间复杂度
-s=list(input().split('+'))
-al=[]
-for u in s:
-    t=len(u)
-    c=u.find('n')
-    if c!=0:
-        xishu=int(u[:c])
-    else:
-        xishu=1
-    mici=int(u[c+2:])
-    if xishu!=0:
-        al.append(mici)
-print('n^%d'%max(al))
-```
-
-##### 2.辅助栈，维护min数组
+##### 1.辅助栈，维护min数组
 
 ```c++
 //P0510:快速堆猪
-#include <string>
-#include <stack>
-#include <iostream>
-#include <vector>
-using namespace std;
-
 int main() {
     string s;
     stack<int> a;
     vector<int> m;
-    
     while (cin >> s) {
         if (s == "pop") {
             if (!a.empty()) {
@@ -1301,71 +1816,11 @@ int main() {
             }
         }
     }
-
     return 0;
 }
 ```
 
-##### 3.dp(0219 zipper)
-
-```c++
-#include <iostream>
-#include <vector>
-#include <string>
-using namespace std;
-
-bool f(const string& a, const string& b, const string& c) {
-	int cc = c.length();
-	int dp[402][202];
-	for(int i=0;i<402;i++){
-		for(int j=0;j<202;j++){
-			dp[i][j]=0;
-		}
-	}
-	if (a[0] == c[0]) {
-		dp[0][1]=1;
-	}
-	if (b[0] == c[0]) {
-		dp[0][0]=1;
-	}
-	for (int u = 1; u < cc; ++u) {
-		bool found = false;
-		for (int k=0;k<202;k++) {
-			if(not dp[u-1][k]) continue;
-			if (k < a.length() && a[k] == c[u]) {
-				found = true;
-				dp[u][k+1]=1;
-			}
-			if (u - k < b.length() && b[u - k] == c[u]) {
-				found = true;
-				dp[u][k]=1;
-			}
-		}
-		if (!found) {
-			return false;
-		}
-	}
-	return true;
-}
-
-int main() {
-	int datasets;
-	cin >> datasets;
-	for (int i = 0; i < datasets; ++i) {
-		string a, b, c;
-		cin >> a >> b >> c;
-		bool t = f(a, b, c);
-		if (t) {
-			cout << "Data set " << i + 1 << ": yes" << endl;
-		} else {
-			cout << "Data set " << i + 1 << ": no" << endl;
-		}
-	}
-	return 0;
-}
-```
-
-##### 4.dp(最佳加法表达式)
+##### 2.dp(最佳加法表达式)
 
 ```python
 #04152
@@ -1393,55 +1848,10 @@ while 1:
         break
 ```
 
-##### 5.02775 文件结构图
-
-```python
-from collections import defaultdict
-k=1
-while 1:
-    f=0
-    g=0
-    alfile=set()
-    ans=[]
-    ans.append("ROOT")
-    temp=defaultdict(list)
-    while 1:
-        x=input()
-        if x=='*':
-            break
-        if x=='#':
-            f=1
-            break
-        if x[0]=='f':
-            if g:
-                temp[g].append("|     "*g+x)
-            else:
-                alfile.add(x) 
-        if x[0]=='d':
-            g+=1
-            ans.append("|     "*g+x)
-        if x==']':
-            g-=1
-            for u in sorted(temp[g+1]):
-                ans.append(u)
-            temp[g+1]=[]
-    if f:
-        break
-    print(f"DATA SET {k}:")
-    k+=1
-    al=list(alfile)
-    for u in ans:
-        print(u)
-    for u in sorted(al):
-        print(u)
-    print()
-```
-
-  5.dp（核电站）
+#####   3.dp（核电站）
 
 ```c++
 #include<stdio.h>
- 
 int main(){
     int n,m,i;
     scanf("%d%d",&n,&m);
@@ -1456,7 +1866,9 @@ int main(){
 } 
 ```
 
-6.dp(上机)：这题dp难在每个状态还会由他后面所影响，那么这题就考虑多种情况把后面的状态也进行分类，那么后面状态dp的时候就要考虑只能由前面标定的后面状态来推。 像酒鬼，核电站这种题，难在当前状态会随前面不同的状态而改变递推方式，所以也要多情况考虑。
+##### 4.dp(上机)：
+
+##### 这题dp难在每个状态还会由他后面所影响，那么这题就考虑多种情况把后面的状态也进行分类，那么后面状态dp的时候就要考虑只能由前面标定的后面状态来推。 像酒鬼，核电站这种题，难在当前状态会随前面不同的状态而改变递推方式，所以也要多情况考虑。
 
 ```python
 n=int(input())
@@ -1473,6 +1885,16 @@ for i in range(1,n):
     dp[i][2]=max(dp[i-1][2],dp[i-1][3])+b[i]
     dp[i][3]=max(dp[i-1][1],dp[i-1][0])+c[i]
 print(max(dp[-1][0],dp[-1][1]))
+```
 
+##### 5.欧拉筛
+
+```python
+def euler_sieve(n):
+is_prime, primes = [True] * (n + 1), []
+for i in range(2, n + 1):
+if is_prime[i]: primes.append(i); (for j in range(i * i, n + 1, i):
+is_prime[j] = False)
+return primes
 ```
 
